@@ -30,21 +30,20 @@ def fix_filename(base, filepath):
     
     # Append ./ to filepath so that it is correctly joined with base.
     #  If filepath begins with /, this prevents base from being ignored.
-    return os.path.normpath(os.path.join(base, "./" + filepath))
+    return os.path.normpath(os.path.join(base, f"./{filepath}"))
 
 def create_file(filename):
     """Attempts to create filename."""
     
     path = os.path.dirname(filename)
-    
+
     try:
         os.makedirs(path)
     except OSError:
         if not os.path.isdir(path):
             raise
-    
-    f = open(filename, "wb+")
-    return f
+
+    return open(filename, "wb+")
     
 def appears_bhd(header):
     """ Determines if the given file has the magic bytes of a *bhd header.
@@ -63,8 +62,6 @@ def parse_bhd_header_to_dict(header):
     
     with open(header, 'rb') as h:
         content = h.read()
-    return_dict = {}
-    
     master_offset = 0
     master_offset = consume_byte(content, master_offset, 'B', 1)
     master_offset = consume_byte(content, master_offset, 'H', 1)
@@ -78,29 +75,27 @@ def parse_bhd_header_to_dict(header):
     master_offset = consume_byte(content, master_offset, '6', 1)
     master_offset = consume_byte(content, master_offset, '\x00', 1)
     master_offset = consume_byte(content, master_offset, '\x00', 1)
-    
+
     # Skip the version number.
     master_offset = 0x0c
     (magic_flag, num_of_records) = struct.unpack_from("<II", content, offset=master_offset)
     master_offset += struct.calcsize("<II")
-    if not (magic_flag != 0x74 or magic_flag != 0x54):
-        raise ValueError("File has unknown BHD3 magic flag: " + hex(magic_flag))
-    
     # Skip to the records.
     master_offset = 0x20
-    
+
+    return_dict = {}
     for _ in xrange(num_of_records):
         (record_sep, filedata_size, filedata_offset, file_id, 
          filename_offset, dummy_filedata_size) = struct.unpack_from("<IIIIII", content, offset=master_offset)
         master_offset += struct.calcsize("<IIIIII")
         if filedata_size != dummy_filedata_size:
-            raise ValueError("File has malformed record structure. File data size " + 
-             str(filedata_size) + " does not match dummy file data size " + 
-             str(dummy_filedata_size) + ".")
+            raise ValueError(
+                f"File has malformed record structure. File data size {str(filedata_size)} does not match dummy file data size {str(dummy_filedata_size)}."
+            )
         if record_sep != 0x40:
             raise ValueError("File has malformed record structure. Record" + 
             " has unknown record separator " + hex(record_sep))
-            
+
         filename = extract_strz(content, filename_offset).replace('\\', '/')
         return_dict[filename] = (filedata_offset, filedata_size)
     return return_dict
@@ -121,11 +116,11 @@ def parse_bhd5_header_to_dict(header):
     """
     
     name_hash_dict = name_hash_handler.build_name_hash_dict()
-    
+
     with open(header, 'rb') as h:
         header_str = h.read()
     return_dict = {}
-    
+
     master_offset = 0
     master_offset = consume_byte(header_str, master_offset, 'B', 1)
     master_offset = consume_byte(header_str, master_offset, 'H', 1)
@@ -135,12 +130,12 @@ def parse_bhd5_header_to_dict(header):
     master_offset = consume_byte(header_str, master_offset, '\x00', 3)
     master_offset = consume_byte(header_str, master_offset, '\x01', 1)
     master_offset = consume_byte(header_str, master_offset, '\x00', 3)
-    
+
     (file_size,) = struct.unpack_from("<I", header_str, offset=master_offset)
     master_offset += struct.calcsize("<I")
     (bin_count, bin_offset) = struct.unpack_from("<II", header_str, offset=master_offset)
     master_offset += struct.calcsize("<II")
-            
+
     for _ in xrange(bin_count):
         (bin_record_count, bin_record_offset) = struct.unpack_from("<II", header_str, offset=master_offset)
         master_offset += struct.calcsize("<II")
@@ -148,11 +143,15 @@ def parse_bhd5_header_to_dict(header):
             (record_hash, record_size, record_offset, zero) = struct.unpack_from("<IIII", header_str, offset=bin_record_offset)
             bin_record_offset += struct.calcsize("<IIII")
             if zero != 0:
-                raise ValueError("Required record terminator is non-zero. Actual value is " + str(zero) + ".")
+                raise ValueError(
+                    f"Required record terminator is non-zero. Actual value is {str(zero)}."
+                )
             try:
                 name = name_hash_dict[record_hash]
             except KeyError:
-                raise ValueError("Name hash " + hex(name_hash) + " was not found in the name hash dictionary.")
+                raise ValueError(
+                    f"Name hash {hex(name_hash)} was not found in the name hash dictionary."
+                )
             return_dict[name] = (record_offset, record_size)
     return return_dict
 

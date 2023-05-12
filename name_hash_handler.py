@@ -6153,7 +6153,4 @@ def build_name_hash_dict():
      as the value for that key.
     """
     
-    name_hash_dict = {}
-    for name in FILENAMES:
-        name_hash_dict[get_hash_from_string(name)] = name
-    return name_hash_dict
+    return {get_hash_from_string(name): name for name in FILENAMES}

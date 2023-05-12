@@ -51,28 +51,27 @@ def check_exe():
     If no DARKSOULS.exe is found, status is "None".
     """
     
+    EXE_FILENAME = "DARKSOULS.exe"
+
+    if not os.path.isfile(EXE_FILENAME):
+        return ("", "None")
+    checksum = get_checksum(EXE_FILENAME)
+    log.info(f".exe checksum is {checksum}")
     EXE_CHECKSUM =           "67bcab513c8f0ed6164279d85f302e06b1d8a53abff5df7f3d10e1d4dfd81459"
     MOD_EXE_CHECKSUM =       "903a946273bfe123fe5c85740c3613374e2cf538564bb661db371c6cb5a421ff"
     DEBUG_EXE_CHECKSUM =     "b6958f3f0db5fdb7ce6f56bff14353d8d81da8bae3456795a39dbe217c1897cf"
     MOD_DEBUG_EXE_CHECKSUM = "473de70f0dd03048ca5dea545508f6776206424494334a9da091fb27c8e5a23f"
-    
-    EXE_FILENAME = "DARKSOULS.exe"
-    
-    if os.path.isfile(EXE_FILENAME):
-        checksum = get_checksum(EXE_FILENAME)
-        log.info(".exe checksum is " + checksum)
-        if checksum == EXE_CHECKSUM:
-            return (EXE_FILENAME, "Expected")
-        elif checksum == DEBUG_EXE_CHECKSUM:
-            return (EXE_FILENAME, "Expected Debug")
-        elif checksum == MOD_EXE_CHECKSUM:
-            return (EXE_FILENAME, "Unpacked")
-        elif checksum == MOD_DEBUG_EXE_CHECKSUM:
-            return (EXE_FILENAME, "Unpacked Debug")
-        else:
-            return (EXE_FILENAME, "Unexpected")
+
+    if checksum == EXE_CHECKSUM:
+        return (EXE_FILENAME, "Expected")
+    elif checksum == DEBUG_EXE_CHECKSUM:
+        return (EXE_FILENAME, "Expected Debug")
+    elif checksum == MOD_EXE_CHECKSUM:
+        return (EXE_FILENAME, "Unpacked")
+    elif checksum == MOD_DEBUG_EXE_CHECKSUM:
+        return (EXE_FILENAME, "Unpacked Debug")
     else:
-        return ("", "None")
+        return (EXE_FILENAME, "Unexpected")
 
 def check_archives(): 
     """Computes each of the Dark Souls archives checksums, and classifies them. Prints progress.
@@ -122,11 +121,7 @@ def check_for_unpacked_dir():
     Returns a list of these directories that are present.
     """
     
-    already_unpacked_dirs = []
-    for d in UNPACKED_DIRS:
-        if os.path.isdir(d):
-            already_unpacked_dirs.append(d)
-    return already_unpacked_dirs
+    return [d for d in UNPACKED_DIRS if os.path.isdir(d)]
 
 def check_dir_exists(dir_to_check):
     """Checks to see if the given directory exists."""
@@ -229,7 +224,7 @@ def modify_exe(filename):
 def build_bdt_bhd_pairing(file_list):
     bdt_list = [f for f in file_list if os.path.splitext(f)[1][-3:] == "bdt"]
     bhd_list = [f for f in file_list if os.path.splitext(f)[1][-3:] == "bhd"]
-    
+
     return_dict = {bdt_file: [] for bdt_file in bdt_list}
     for bdt_file in bdt_list:
         (_, bdt_filename) = os.path.split(os.path.abspath(bdt_file))
@@ -239,9 +234,9 @@ def build_bdt_bhd_pairing(file_list):
             trimmed_bhd_filename = bhd_filename[:-3]
             if trimmed_bdt_filename == trimmed_bhd_filename:
                 return_dict[bdt_file].append(bhd_file)
-        log.info("bdt/bhd pairing dict entry for '" + str(bdt_file) + "':")
+        log.info(f"bdt/bhd pairing dict entry for '{str(bdt_file)}':")
         for f in return_dict[bdt_file]:
-            log.info(" " + str(f))
+            log.info(f" {str(f)}")
     return return_dict
             
 def unpack_archives():
@@ -380,15 +375,15 @@ def remove_archives():
     """Removes any Dark Souls archive files from the current directory."""
     
     for i in [0, 1, 2, 3]:
-        header_file = "dvdbnd" + str(i) + ".bhd5"
-        data_file = "dvdbnd" + str(i) + ".bdt"
-        
+        header_file = f"dvdbnd{str(i)}.bhd5"
+        data_file = f"dvdbnd{str(i)}.bdt"
+
         try:
             os.remove(header_file)
         except OSError:
             if not os.path.isfile(header_file):
                 raise
-        
+
         try:
             os.remove(data_file)
         except OSError:
@@ -427,7 +422,7 @@ def wait_before_exit(exit_code):
     """Displays a message before exiting with exit code exit_code"""
     
     raw_input("Exiting. Press ENTER to continue... ")
-    log.info("Exited with exit code " + str(exit_code)) 
+    log.info(f"Exited with exit code {str(exit_code)}")
     sys.exit(exit_code)
 
 def attempt_unpack():
